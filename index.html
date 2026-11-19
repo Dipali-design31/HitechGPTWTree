@@ -239,7 +239,7 @@ details summary{cursor:pointer;font-weight:700;font-size:14.5px;padding:6px 0;co
     <ul id="sres"></ul>
   </div>
   <button class="mcta" id="mcta"><span class="hand" style="--c:#fff" aria-hidden="true"></span><span>Add your hand</span></button>
-  <div class="abanner" id="abanner" hidden><span id="abText">Admin mode: tap a hand or fruit to edit it</span><button id="abBtn">Settings</button><button id="abExit">Exit</button></div>
+  <div class="abanner" id="abanner" hidden><span id="abText">Admin mode: tap a hand, apple or leaf to edit it</span><button id="abBtn">Settings</button><button id="abExit">Exit</button></div>
   <div id="tip" hidden></div>
 </main>
 
@@ -302,7 +302,7 @@ details summary{cursor:pointer;font-weight:700;font-size:14.5px;padding:6px 0;co
   <div class="ahead"><h2>Admin settings</h2><button class="btn sm" id="aExit">Exit admin</button><button class="x" id="aClose" aria-label="Close settings">×</button></div>
   <div class="tabs" role="tablist">
     <button role="tab" data-tab="posts" aria-selected="true">Entries</button>
-    <button role="tab" data-tab="fruits">Fruits</button>
+    <button role="tab" data-tab="fruits">Apples &amp; leaves</button>
     <button role="tab" data-tab="text">Text</button>
     <button role="tab" data-tab="look">Look</button>
     <button role="tab" data-tab="dl">Download</button>
@@ -334,6 +334,11 @@ details summary{cursor:pointer;font-weight:700;font-size:14.5px;padding:6px 0;co
       <label class="fld"><span>Text on each fruit</span><input class="in" id="fLabel" maxlength="10"></label>
       <button class="btn sm" id="fLabelGo" style="align-self:flex-start">Save fruit text</button>
       <div class="zone"><button class="btn danger" id="fClear">Remove all fruits</button></div>
+      <h3>Leaves</h3>
+      <p class="stat" id="lfStat"></p>
+      <button class="btn" id="lfTap">Remove leaves by tapping the tree</button>
+      <p class="hint">In admin mode you can also tap a single leaf to remove it.</p>
+      <div class="btnrow"><button class="btn danger" id="lfAll">Remove all leaves</button><button class="btn" id="lfBack">Bring back all leaves</button></div>
     </section>
 
     <section data-panel="text" hidden>
@@ -406,7 +411,7 @@ const DEF={
   suggestions:['Trust','Growth','Respect','Belonging','Learning','Teamwork','Care','Pride','Flexibility','Family'],
   palette:HITECH_COLOURS,footLine:'Let’s Celebrate YOU. Let’s Celebrate Hitech!',footTag:'#MyHitechStory',
   shareText:'@Hitech Digital Solutions is Great Place To Work® Certified! 🎉\n\nHere is my #MyHitechStory:\n\n\n#MyHitechStory #HitechDigital #GreatPlaceToWork',
-  maxWord:20,open:true,moderate:false,onePerPerson:true,logoLeft:'',logoRight:'',fruits:[]
+  maxWord:20,open:true,moderate:false,onePerPerson:true,leavesOff:false,leafGone:[],logoLeft:'',logoRight:'',fruits:[]
 };
 const $=s=>document.querySelector(s);
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -479,15 +484,13 @@ function mergeConfig(c){
 }
 
 /* ---------- storage: server API, or this browser in preview mode ---------- */
-const SAMPLE=[['Aarav Shah','Trust'],['Diya Patel','Growth'],['Kabir Mehta','Respect'],['Ananya Joshi','Teamwork'],['Vihaan Desai','Learning'],['Isha Trivedi','Care'],['Rohan Nair','Belonging'],['Meera Iyer','Pride'],['Arjun Rao','Family'],['Sneha Kulkarni','Innovation'],['Yash Parmar','Flexibility'],['Priya Menon','Support'],['Dev Bhatt','Fairness'],['Kavya Pillai','Openness'],['Neel Chauhan','Fun'],['Riya Sharma','Balance'],['Aditya Verma','Recognition'],['Tanvi Gupta','Opportunity'],['Karan Malhotra','Kindness'],['Pooja Reddy','Excellence'],['Harsh Vyas','Trust'],['Nisha Kapoor','Growth'],['Rahul Jain','Teamwork'],['Zoya Khan','Belonging'],['Manav Solanki','Learning'],['Aditi Bose','Care'],['Siddharth Pandya','Respect'],['Lavanya Das','Pride'],['Om Thakkar','Trust'],['Fatima Sheikh','Inclusion'],['Jay Rathod','Growth'],['Krisha Dave','Family']];
+// No sample entries: the tree starts empty.
 const Demo={
-  key:'hitech-gptw-tree-preview-v3',mem:null,
+  key:'hitech-gptw-tree-preview-v4',mem:null,
   read(){
     if(this.mem)return this.mem;
     let d=null;try{d=JSON.parse(localStorage.getItem(this.key))}catch(e){}
-    if(!d){const pal=DEF.palette;const t0=Date.now()-86400000*3;
-      d={v:1,pw:DEMO_PW,seq:SAMPLE.length,config:{fruits:[[560,360],[1030,330],[800,560],[1210,560],[390,600]]},
-        posts:SAMPLE.map((s,i)=>({id:i+1,name:s[0],word:s[1],color:pal[(i*5)%pal.length].c,status:'approved',created:new Date(t0+i*3600000).toISOString()}))};}
+    if(!d)d={v:1,pw:DEMO_PW,seq:0,config:{},posts:[]};
     return this.mem=d;
   },
   save(){try{localStorage.setItem(this.key,JSON.stringify(this.mem))}catch(e){}},
@@ -531,15 +534,20 @@ const Demo={
 const Store={
   mode:'server',
   async boot(){
-    try{
-      const r=await fetch(API+'?v=0',{cache:'no-store'});
-      if(!(r.headers.get('content-type')||'').includes('json'))throw 0;
-      const j=await r.json();
-      if(j&&j.v!=null){this.mode='server';return j;}
-      if(j&&j.error){this.mode='server';S.serverError=j.error;return {v:0,config:{},posts:[]};}
-      throw 0;
-    }catch(e){this.mode='demo';return Demo.pub();}
+    // The browser-only preview store is used ONLY when the page is opened from a file or inside a preview frame.
+    // On the live website, the tree always uses the shared database, and shows a clear message if it can't reach it.
+    const preview=location.protocol==='file:'||location.origin==='null'||/claudeusercontent|claude\.ai/.test(location.hostname);
+    let r;
+    try{r=await fetch(API+'?v=0',{cache:'no-store'});}
+    catch(e){if(preview){this.mode='demo';return Demo.pub();}return this.fail('No connection to the server. Check your internet and refresh the page.');}
+    let j=null;if((r.headers.get('content-type')||'').includes('json')){try{j=await r.json();}catch(e){}}
+    if(j&&j.v!=null){this.mode='server';return j;}
+    if(preview){this.mode='demo';return Demo.pub();}
+    if(j&&j.error)return this.fail(j.error);
+    if(r.status===404)return this.fail('Setup problem: the server part of the site (api/tree.js) was not found. In GitHub, check that the api folder with tree.js, and package.json, are in the main folder of the repository, then redeploy.');
+    return this.fail(`Setup problem: the server part of the site is not working (error ${r.status}). Open Vercel, then Logs, to see why.`);
   },
+  fail(msg){this.mode='server';S.serverError=msg;return {v:0,config:{},posts:[]};},
   async get(v){if(this.mode==='demo')return Demo.pub();const r=await fetch(API+'?v='+v,{cache:'no-store'});return r.json();},
   async add(p){if(this.mode==='demo')return Demo.add(p);return post({action:'add',...p});},
   async admin(action,b={}){if(this.mode==='demo')return Demo.admin(action,{...b,password:S.pw});return post({...b,action,password:S.pw});}
@@ -633,6 +641,13 @@ const LEAVES=(()=>{
   }
   return out;
 })();
+let _lgKey=null,_lgSet=new Set();
+function leafGoneSet(){const a=S.config.leafGone||[];if(a!==_lgKey){_lgKey=a;_lgSet=new Set(a);}return _lgSet;}
+function hitLeaf(wx,wy){
+  if(S.config.leavesOff)return -1;const gone=leafGoneSet();let best=-1,bd=Infinity;
+  for(let i=0;i<LEAVES.length;i++){if(gone.has(i))continue;const f=LEAVES[i],cx=f.x+Math.cos(f.a)*f.l*.5,cy=f.y+Math.sin(f.a)*f.l*.5,dd=Math.hypot(cx-wx,cy-wy);if(dd<f.l*.5&&dd<bd){bd=dd;best=i;}}
+  return best;
+}
 function drawLeaf(ctx,f,sc){
   const l=f.l*sc,w=l*.42;ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);
   ctx.fillStyle=f.c;ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(l*.45,-w,l,0);ctx.quadraticCurveTo(l*.45,w,0,0);ctx.fill();
@@ -652,7 +667,7 @@ function drawScene(ctx,o){
   const cfg=S.config,grow=o.grow==null?1:o.grow,now=o.now||performance.now(),vs=o.viewS||1;
   ctx.save();ctx.fillStyle='#D1D1D1';
   for(const b of TREE)drawBranch(ctx,b,clamp((grow-b[10])/(b[11]-b[10]),0,1));
-  for(const f of LEAVES){const sc=clamp((grow-f.g)/.12,0,1);if(sc>0)drawLeaf(ctx,f,easeOut(sc));}
+  if(!cfg.leavesOff){const gone=leafGoneSet();for(let i=0;i<LEAVES.length;i++){if(gone.has(i))continue;const f=LEAVES[i],sc=clamp((grow-f.g)/.12,0,1);if(sc>0)drawLeaf(ctx,f,easeOut(sc));}}
   ctx.restore();
   const L=S.layout;if(!L)return;
   const n=L.items.length,shown=o.shown==null?Infinity:o.shown,win=Math.max(1,n*.06),scales=new Array(n),Hh=L.s*1.1,Wh=Hh*HAR;
@@ -787,9 +802,12 @@ cv.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&!S.tipPinned)
 cv.addEventListener('wheel',e=>{e.preventDefault();const k=e.ctrlKey?.012:.0016;zoomAt(Math.exp(-e.deltaY*k),e.offsetX,e.offsetY);},{passive:false});
 function tap(sx,sy){
   const [wx,wy]=toWorld(sx,sy);
+  if(S.leafMode){const li=hitLeaf(wx,wy);if(li>=0)removeLeaves([li]);else toast('Tap directly on a leaf to remove it.');return;}
   if(S.placing){if(!inCanopy(wx,wy,1.05)){toast('Tap inside the treetop to place a fruit.');return;}addFruits([[Math.round(wx),Math.round(wy)]]);return;}
   if(S.pw){const fi=hitFruit(wx,wy);if(fi>=0){showFruitTip(fi,sx,sy);return;}}
-  const it=hitHand(wx,wy);if(it)showTip(it,true);else hideTip(true);
+  const it=hitHand(wx,wy);if(it){showTip(it,true);return;}
+  if(S.pw){const li=hitLeaf(wx,wy);if(li>=0){showLeafTip(li);return;}}
+  hideTip(true);
 }
 
 
@@ -807,9 +825,11 @@ function showFruitTip(i){
   tip.innerHTML=`<b>${esc(S.config.fruitLabel||'GPTW')} fruit</b><div class="acts"><button class="del" data-a="rmf">Remove fruit</button></div>`;
   tip.hidden=false;placeTip();
 }
+function showLeafTip(i){S.tipFor={leaf:i};S.tipPinned=true;tip.classList.add('pin');tip.innerHTML=`<b>Leaf</b><div class="acts"><button class="del" data-a="rml">Remove leaf</button></div>`;tip.hidden=false;placeTip();}
 function placeTip(){
   const t=S.tipFor;if(!t)return;const v=S.view,r=stage.getBoundingClientRect();let x,y,h;
   if(t.fruit!=null){const f=S.config.fruits[t.fruit];if(!f){hideTip(true);return;}x=f[0]*v.s+v.tx;y=f[1]*v.s+v.ty;h=34*v.s;}
+  else if(t.leaf!=null){const f=LEAVES[t.leaf];x=(f.x+Math.cos(f.a)*f.l*.5)*v.s+v.tx;y=(f.y+Math.sin(f.a)*f.l*.5)*v.s+v.ty;h=f.l*.4*v.s;}
   else{x=t.x*v.s+v.tx;y=t.y*v.s+v.ty;h=S.layout.s*.55*v.s;}
   const w=tip.offsetWidth,th=tip.offsetHeight;let left=clamp(x-w/2,8,r.width-w-8),top=y-h-th-6;if(top<8)top=y+h+6;
   tip.style.left=left+'px';tip.style.top=top+'px';
@@ -817,6 +837,7 @@ function placeTip(){
 function hideTip(force){if(S.tipPinned&&!force)return;S.tipFor=null;S.tipPinned=false;tip.hidden=true;cv.classList.remove('pt');}
 tip.addEventListener('click',async e=>{
   const a=e.target.closest('button')?.dataset.a;if(!a)return;const t=S.tipFor;
+  if(a==='rml'){hideTip(true);removeLeaves([t.leaf]);return;}
   if(a==='rmf'){const f=S.config.fruits.slice();f.splice(t.fruit,1);hideTip(true);await saveConfig({fruits:f},'Fruit removed.');}
   if(a==='del'){hideTip(true);if(!await ask(`The hand of ${t.p.name} will be removed from the tree.`,{title:'Delete this hand?'}))return;await adminDo('delete',{ids:[t.p.id]},'Entry deleted.');}
   if(a==='edit'){hideTip(true);S.editId=t.p.id;$('#pq').value=t.p.name;openDrawer('posts');}
@@ -838,7 +859,7 @@ sq.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();sres.querySelector('butt
 $('#bIn').onclick=()=>{const r=stage.getBoundingClientRect();zoomAt(1.5,r.width/2,r.height/2);};
 $('#bOut').onclick=()=>{const r=stage.getBoundingClientRect();zoomAt(1/1.5,r.width/2,r.height/2);};
 $('#bFit').onclick=()=>{hideTip(true);fit(true);};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideTip(true);sBox.hidden=true;if(S.placing)setPlacing(false);}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideTip(true);sBox.hidden=true;if(S.placing)setPlacing(false);if(S.leafMode)setLeafMode(false);}});
 
 /* ---------- apply data ---------- */
 function setPosts(list,animate){
@@ -870,7 +891,7 @@ function applyConfig(){
   if(S.serverError){note.hidden=false;note.className='note bad';note.textContent=S.serverError;}
   else note.hidden=true;
 }
-async function poll(){if(document.hidden||S.pw||Store.mode==='demo')return;try{applyPublic(await Store.get(S.v),true);}catch(e){}}
+async function poll(){if(document.hidden||S.pw||Store.mode==='demo')return;try{const d=await Store.get(S.serverError?0:S.v);if(d&&d.v!=null){if(S.serverError){S.serverError='';}applyPublic(d,true);}}catch(e){}}
 
 function loadFonts(){
   const chars=[...new Set((S.config.title+S.config.subtitle+S.config.question).replace(/\s/g,''))].sort().join('')+' ';
@@ -907,6 +928,7 @@ $('#mcta').onclick=()=>{$('#panel').scrollIntoView({behavior:RM?'auto':'smooth'}
 let busy=false;
 async function submitHand(){
   if(busy)return;const err=$('#addErr'),go=$('#addGo');
+  if(S.serverError){err.textContent='Sorry, hands can’t be saved right now. Please try again in a few minutes.';return;}
   const name=$('#fName').value.trim(),word=$('#fWord').value.trim();
   if(name.length<2){err.textContent='Enter your full name.';$('#fName').focus();return;}
   if(!word){err.textContent='Add one word that makes Hitech a great place to work.';$('#fWord').focus();return;}
@@ -955,11 +977,11 @@ async function login(){
   if(j.error){S.pw=null;$('#pwErr').textContent=j.error;return;}
   pwDlg.close();$('#gear').classList.add('on');$('#abanner').hidden=false;applyAdmin(j);openDrawer('posts');
 }
-function exitAdmin(){S.pw=null;S.all=[];S.editId=null;setPlacing(false);$('#gear').classList.remove('on');$('#abanner').hidden=true;drawer.classList.remove('open');hideTip(true);Store.get(0).then(d=>applyPublic(d,false));toast('You have left admin mode.');}
+function exitAdmin(){S.pw=null;S.all=[];S.editId=null;setPlacing(false);setLeafMode(false);$('#gear').classList.remove('on');$('#abanner').hidden=true;drawer.classList.remove('open');hideTip(true);Store.get(0).then(d=>applyPublic(d,false));toast('You have left admin mode.');}
 function openDrawer(tab){if(tab)selectTab(tab);drawer.classList.add('open');renderAdmin();}
 $('#aClose').onclick=()=>drawer.classList.remove('open');
 $('#aExit').onclick=exitAdmin;$('#abExit').onclick=exitAdmin;
-$('#abBtn').onclick=()=>{if(S.placing)setPlacing(false);else openDrawer();};
+$('#abBtn').onclick=()=>{if(S.placing)setPlacing(false);else if(S.leafMode)setLeafMode(false);else openDrawer();};
 let tabNow='posts';
 function selectTab(t){tabNow=t;drawer.querySelectorAll('[role=tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));drawer.querySelectorAll('[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==t);fillPanel(t);}
 drawer.querySelectorAll('[role=tab]').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));
@@ -973,7 +995,7 @@ function renderAdmin(){if(!S.pw)return;fillPanel(tabNow);}
 function fillPanel(t){
   if(!S.pw)return;const c=S.config;
   if(t==='posts')renderPosts();
-  if(t==='fruits'){$('#fStat').innerHTML=`<b>${c.fruits.length}</b> ${c.fruits.length===1?'fruit':'fruits'} on the tree`;if(document.activeElement!==$('#fLabel'))$('#fLabel').value=c.fruitLabel;}
+  if(t==='fruits'){const lv=c.leavesOff?0:LEAVES.length-leafGoneSet().size;$('#lfStat').innerHTML=c.leavesOff?'Leaves are switched off.':`<b>${lv}</b> of ${LEAVES.length} leaves on the tree`;$('#fStat').innerHTML=`<b>${c.fruits.length}</b> ${c.fruits.length===1?'fruit':'fruits'} on the tree`;if(document.activeElement!==$('#fLabel'))$('#fLabel').value=c.fruitLabel;}
   if(t==='text'){drawer.querySelectorAll('[data-panel=text] [data-k]').forEach(i=>{const k=i.dataset.k;if(i.type==='checkbox')i.checked=!!c[k];else i.value=k==='suggestions'?c.suggestions.join(', '):c[k];});}
   if(t==='look'&&!lookDraft)loadLook();
 }
@@ -1046,7 +1068,17 @@ async function addFruits(pts){
 }
 $('#fAdd').onclick=()=>addFruits([freeSpot(S.config.fruits)]);
 $('#fAdd5').onclick=()=>{const pts=[];for(let i=0;i<5;i++)pts.push(freeSpot(S.config.fruits.concat(pts)));addFruits(pts);};
-function setPlacing(on){S.placing=on;cv.classList.toggle('placing',on);$('#abText').textContent=on?'Tap the treetop to place a fruit':'Admin mode: tap a hand or fruit to edit it';$('#abBtn').textContent=on?'Done':'Settings';$('#fPlace').textContent=on?'Stop placing fruits':'Place fruits by tapping the tree';}
+let leafSaveT=null;
+function removeLeaves(idx){
+  const g=new Set(S.config.leafGone||[]);idx.forEach(i=>g.add(i));S.config.leafGone=[...g].sort((a,b)=>a-b);req();fillPanel('fruits');
+  clearTimeout(leafSaveT);leafSaveT=setTimeout(()=>saveConfig({leafGone:S.config.leafGone,leavesOff:S.config.leavesOff},'Leaves updated.'),700);
+}
+function setLeafMode(on){S.leafMode=on;if(on&&S.placing)setPlacing(false);cv.classList.toggle('placing',on||!!S.placing);
+  $('#abText').textContent=on?'Tap leaves to remove them':'Admin mode: tap a hand, apple or leaf to edit it';$('#abBtn').textContent=on?'Done':'Settings';$('#lfTap').textContent=on?'Stop removing leaves':'Remove leaves by tapping the tree';}
+$('#lfTap').onclick=()=>{setLeafMode(!S.leafMode);if(S.leafMode){drawer.classList.remove('open');hideTip(true);}};
+$('#lfAll').onclick=async()=>{if(!await ask('All leaves will be removed from the tree. You can bring them back later.',{title:'Remove all leaves?',yes:'Remove all'}))return;saveConfig({leavesOff:true},'All leaves removed.');};
+$('#lfBack').onclick=()=>saveConfig({leavesOff:false,leafGone:[]},'All leaves are back.');
+function setPlacing(on){if(on&&S.leafMode)setLeafMode(false);S.placing=on;cv.classList.toggle('placing',on);$('#abText').textContent=on?'Tap the treetop to place a fruit':'Admin mode: tap a hand, apple or leaf to edit it';$('#abBtn').textContent=on?'Done':'Settings';$('#fPlace').textContent=on?'Stop placing fruits':'Place fruits by tapping the tree';}
 $('#fPlace').onclick=()=>{setPlacing(!S.placing);if(S.placing){drawer.classList.remove('open');hideTip(true);}};
 $('#fLabelGo').onclick=()=>saveConfig({fruitLabel:clean($('#fLabel').value,10)||'GPTW'},'Fruit text saved.');
 $('#fClear').onclick=async()=>{if(!S.config.fruits.length||!await ask('Every GPTW fruit will be removed from the tree.',{title:'Remove all fruits?',yes:'Remove all'}))return;saveConfig({fruits:[]},'All fruits removed.');};
@@ -1194,7 +1226,7 @@ $('#dXls').onclick=async()=>{
   if(!S.layout)relayout();
   fit(false);if(!RM)S.intro=performance.now();req();checkAdded();
   new ResizeObserver(()=>{sizeCanvas();if(!S.userMoved){const v=fitView();S.fitS=v.s;S.view=v;}else S.fitS=fitView().s;req();}).observe(stage);
-  setInterval(poll,45000);document.addEventListener('visibilitychange',poll);
+  setInterval(poll,30000);document.addEventListener('visibilitychange',poll);
 })();
 })();
 </script>
