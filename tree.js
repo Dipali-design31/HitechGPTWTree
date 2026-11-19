@@ -44,11 +44,12 @@ async function checkPassword(pw) {
 }
 
 // ---- config sanitising ----
-const STR = { title: 120, subtitle: 200, question: 160, trunkLabel: 24, fruitLabel: 10, cta: 40, submit: 60, thanks: 200 };
+const STR = { title: 120, subtitle: 200, question: 160, trunkLabel: 24, fruitLabel: 10, cta: 40, submit: 60, thanks: 200, footLine: 120, footTag: 40 };
 function sanitizeConfig(c) {
   const o = {};
   if (!c || typeof c !== 'object') return o;
   for (const [k, n] of Object.entries(STR)) if (typeof c[k] === 'string') o[k] = clean(c[k], n);
+  if (typeof c.shareText === 'string') o.shareText = c.shareText.replace(/[\u0000-\u0009\u000B-\u001F\u007F<>]/g, '').trim().slice(0, 1000);
   for (const k of ['open', 'moderate', 'showBadge', 'onePerPerson']) if (typeof c[k] === 'boolean') o[k] = c[k];
   if (c.scene === 'day' || c.scene === 'dusk') o.scene = c.scene;
   if (Number.isFinite(+c.maxWord)) o.maxWord = Math.max(5, Math.min(40, Math.round(+c.maxWord)));

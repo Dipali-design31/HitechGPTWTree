@@ -21,13 +21,13 @@
 }
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:#fff;color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;background:#fff;color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid #5C9BD0;outline-offset:2px}
 [hidden]{display:none!important}
 
-.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(340px,29vw,420px)}
+.app{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(340px,29vw,420px)}
 
 /* left: the tree */
 #stage{position:relative;min-height:0;overflow:hidden;background:#fff}
@@ -92,8 +92,10 @@ textarea.in{height:auto;min-height:70px;padding:10px 13px;resize:vertical}
 .hand{display:inline-block;flex:none;width:23px;height:28px;background:var(--c,#2E73BF);-webkit-mask:var(--hm) center/contain no-repeat;mask:var(--hm) center/contain no-repeat}
 .sw[aria-checked="true"]{border-color:var(--navy)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{height:32px;border-radius:999px;border:1px solid var(--line);background:#fff;padding:0 12px;font-size:13.5px;font-weight:600;color:var(--navy)}
-.chip:hover{border-color:var(--navy)}
+.chips{gap:5px!important}
+.chip{height:24px;border-radius:999px;border:0;background:#E9ECF2;padding:0 9px;font-size:12px;font-weight:600;color:#6B7385}
+.chip:hover{background:#DDE1E9;color:#3F4656}
+.fld>span.idea{font-weight:600;font-size:12px;color:#8A91A1}
 .go{position:sticky;bottom:10px;z-index:2;flex:none;height:54px;border:0;border-radius:14px;background:var(--navy);color:#fff;font-weight:800;font-size:16.5px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 10px 24px rgba(0,33,113,.25)}
 .go:disabled{opacity:.6;cursor:wait}
 .go .hand{width:23px;height:28px}
@@ -129,6 +131,18 @@ textarea.in{height:auto;min-height:70px;padding:10px 13px;resize:vertical}
 .btn.sm{height:34px;padding:0 11px;font-size:13px;border-radius:9px}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
 
+.sitefoot{flex:none;display:flex;align-items:center;justify-content:center;gap:14px 18px;flex-wrap:wrap;padding:12px 20px;background:var(--navy);color:#fff;text-align:center}
+.sitefoot .msg{font-weight:800;font-size:15.5px;letter-spacing:-.01em}
+.sitefoot .msg #footLine{color:#fff}
+.sitefoot .sep{opacity:.4;margin:0 6px;font-weight:400}
+.sitefoot .tag{color:#FFD84D}
+.sitefoot .arrow{width:34px;height:14px;flex:none;color:#FFD84D}
+.li-btn{height:40px;padding:0 16px 0 12px;border:0;border-radius:999px;background:#0A66C2;color:#fff;font-weight:800;font-size:14px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.li-btn:hover{background:#004182}
+.li-btn svg{width:18px;height:18px}
+.li-tip{margin:0;font-size:12px;color:rgba(255,255,255,.72);max-width:300px;text-align:left;line-height:1.35}
+@media (max-height:820px) and (min-width:900px){.pvh{width:70px;height:85px}.preview{padding:6px 12px}.fbox{gap:10px}.pbody{gap:10px}.pbody h2{font-size:23px}.in{height:40px}.sw{height:48px}.sw .hand{width:28px;height:34px}.sitefoot{padding:9px 20px}}
+@media (max-width:899px){.li-tip{text-align:center}.sitefoot{padding:18px 16px 22px}.sitefoot .arrow{transform:rotate(90deg)}}
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:var(--navy);color:#fff;padding:12px 18px;border-radius:14px;font-size:14.5px;font-weight:600;max-width:calc(100% - 32px);box-shadow:0 12px 30px rgba(0,33,113,.35);transition:opacity .25s,transform .25s;z-index:90;pointer-events:none;text-align:center}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #toast.bad{background:#B3000B}
@@ -188,6 +202,7 @@ details summary{cursor:pointer;font-weight:700;font-size:14.5px;padding:6px 0;co
 /* phones and small tablets: tree on top, form below */
 @media (max-width:899px){
   html,body{height:auto}
+  body{display:block}
   .app{display:block;height:auto}
   #stage{height:clamp(420px,calc(80vw + 150px),78svh)}
   .head{padding:0 12px 0 clamp(92px,24vw,120px);text-align:left}
@@ -241,7 +256,7 @@ details summary{cursor:pointer;font-weight:700;font-size:14.5px;padding:6px 0;co
       <label class="fld"><span>Full name</span><input class="in" id="fName" maxlength="60" autocomplete="name"></label>
       <div class="fld"><span class="lbl" id="swL">Colour of your hand</span><div class="swatches" id="swatches" role="radiogroup" aria-labelledby="swL"></div></div>
       <label class="fld"><span id="qL">Your word</span><input class="in" id="fWord" maxlength="20" enterkeyhint="send" placeholder="Add your word here.."><small id="wCount"></small></label>
-      <div class="fld"><span class="lbl" style="font-weight:600;font-size:13px;color:var(--muted)">Need an idea? Tap one, or write your own.</span><div class="chips" id="chips"></div></div>
+      <div class="fld"><span class="idea">Need an idea? Tap one, or write your own.</span><div class="chips" id="chips"></div></div>
       <p class="err" id="addErr" role="alert"></p>
       <button type="button" class="btn sm errfind" id="errFind" hidden>Find it on the tree</button>
       <button type="button" class="go" id="addGo"><span class="hand" style="--c:#fff" aria-hidden="true"></span><span id="addGoT">Add my hand to the tree</span></button>
@@ -255,6 +270,12 @@ details summary{cursor:pointer;font-weight:700;font-size:14.5px;padding:6px 0;co
   </div>
 </aside>
 </div>
+
+<footer class="sitefoot">
+  <p class="msg" style="margin:0"><span id="footLine">Let’s Celebrate YOU. Let’s Celebrate Hitech!</span><span class="sep">|</span><b class="tag" id="footTag">#MyHitechStory</b></p>
+  <svg class="arrow" viewBox="0 0 34 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h28M24 2l6 5-6 5"/></svg>
+  <button type="button" class="li-btn" id="liBtn"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>Share your story on LinkedIn</button>
+</footer>
 
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -321,6 +342,9 @@ details summary{cursor:pointer;font-weight:700;font-size:14.5px;padding:6px 0;co
       <label class="fld"><span>Question at the top of the form</span><input class="in" data-k="question" maxlength="160"></label>
       <label class="fld"><span>Submit button</span><input class="in" data-k="submit" maxlength="60"></label>
       <label class="fld"><span>Thank-you message</span><input class="in" data-k="thanks" maxlength="200"></label>
+      <label class="fld"><span>Footer line</span><input class="in" data-k="footLine" maxlength="120"></label>
+      <label class="fld"><span>Footer hashtag</span><input class="in" data-k="footTag" maxlength="40"></label>
+      <label class="fld"><span>Starting text for the LinkedIn post</span><textarea class="in" data-k="shareText" rows="5" maxlength="1000"></textarea><small>Colleagues can change it before posting.</small></label>
       <label class="fld"><span>Word ideas</span><textarea class="in" data-k="suggestions" rows="3"></textarea><small>Separate with commas.</small></label>
       <label class="fld"><span>Longest word allowed (characters)</span><input class="in" data-k="maxWord" type="number" min="5" max="40"></label>
       <label class="toggle"><input type="checkbox" data-k="open"> Colleagues can add hands</label>
@@ -380,7 +404,9 @@ const DEF={
   trunkLabel:'hitech',fruitLabel:'GPTW',submit:'Add my hand to the tree',
   thanks:'Your hand is on the tree. Thank you for helping it grow.',
   suggestions:['Trust','Growth','Respect','Belonging','Learning','Teamwork','Care','Pride','Flexibility','Family'],
-  palette:HITECH_COLOURS,maxWord:20,open:true,moderate:false,onePerPerson:true,logoLeft:'',logoRight:'',fruits:[]
+  palette:HITECH_COLOURS,footLine:'Let’s Celebrate YOU. Let’s Celebrate Hitech!',footTag:'#MyHitechStory',
+  shareText:'@Hitech Digital Solutions is Great Place To Work® Certified! 🎉\n\nHere is my #MyHitechStory:\n\n\n#MyHitechStory #HitechDigital #GreatPlaceToWork',
+  maxWord:20,open:true,moderate:false,onePerPerson:true,logoLeft:'',logoRight:'',fruits:[]
 };
 const $=s=>document.querySelector(s);
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -834,7 +860,7 @@ function applyConfig(){
   const c=S.config;
   loadFonts();$('#title').textContent=c.title;$('#subtitle').textContent=c.subtitle;document.title=`${c.title} ${c.subtitle} | Hitech`;
   $('#logoL').src=c.logoLeft||LOGO_L;
-  $('#formH').textContent=c.question;$('#addGoT').style.fontFamily='';$('#addGoT').textContent=c.submit;$('#fWord').maxLength=c.maxWord;
+  $('#formH').textContent=c.question;$('#footLine').textContent=c.footLine;$('#footTag').textContent=c.footTag;$('#addGoT').style.fontFamily='';$('#addGoT').textContent=c.submit;$('#fWord').maxLength=c.maxWord;
   $('#fbox').hidden=!c.open||!$('#done').hidden;$('#closed').hidden=!!c.open;
   buildForm();
   const n=S.posts.length;$('#countN').textContent=n.toLocaleString('en-IN');$('#countL').textContent=n===0?'hands so far. Be the first.':n===1?'hand on our tree':'hands on our tree';
@@ -908,6 +934,14 @@ $('#errFind').onclick=()=>$('#doneFind').onclick();
 function checkAdded(){let id=null;try{id=+localStorage.getItem('gptw-added')||null}catch(e){}
   if(id&&S.layout&&S.layout.byId.has(id)&&$('#done').hidden){S.lastId=id;showDone('You have already added your hand to the tree. Thank you!',true);}}
 $('#doneFind').onclick=()=>{const it=S.layout.byId.get(S.lastId);if(it){if(innerWidth<900)stage.scrollIntoView({behavior:RM?'auto':'smooth'});zoomToItem(it);}};
+
+/* ---------- share on LinkedIn ---------- */
+$('#liBtn').onclick=async()=>{
+  const text=S.config.shareText||DEF.shareText;
+  try{await navigator.clipboard.writeText(text);}catch(e){}
+  const w=window.open('https://www.linkedin.com/feed/?shareActive=true&text='+encodeURIComponent(text),'_blank','noopener');
+  toast(w===null?'Allow pop-ups to open LinkedIn. Your message is copied, so you can paste it into a new post.':'LinkedIn is opening. To make @Hitech Digital Solutions a live tag, retype @Hitech and pick the company.');
+};
 
 /* ---------- admin ---------- */
 const pwDlg=$('#pwDlg'),drawer=$('#admin');
@@ -1021,7 +1055,7 @@ $('#fClear').onclick=async()=>{if(!S.config.fruits.length||!await ask('Every GPT
 $('#tSave').onclick=()=>{
   const o={};drawer.querySelectorAll('[data-panel=text] [data-k]').forEach(i=>{const k=i.dataset.k;
     if(i.type==='checkbox')o[k]=i.checked;else if(k==='suggestions')o[k]=i.value.split(',').map(s=>clean(s,24)).filter(Boolean).slice(0,30);
-    else if(k==='maxWord')o[k]=clamp(parseInt(i.value)||20,5,40);else o[k]=clean(i.value,200)||DEF[k];});
+    else if(k==='maxWord')o[k]=clamp(parseInt(i.value)||20,5,40);else if(k==='shareText')o[k]=String(i.value).replace(/[<>]/g,'').trim().slice(0,1000)||DEF[k];else o[k]=clean(i.value,200)||DEF[k];});
   saveConfig(o,'Changes saved.');
 };
 
