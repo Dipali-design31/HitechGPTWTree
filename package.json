@@ -1,0 +1,10 @@
+{
+  "name": "hitech-gptw-tree",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Hitech Great Place To Work Tree",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}
